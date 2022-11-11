@@ -1,42 +1,45 @@
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef __NETWORK_H__
+#define __NETWORK_H__
 
-#include "maths.h"
 #include "data.h"
+#include "layer.h"
 
-/*
-layer[-1] = input
-layer[i] = sigmoid(layer[i - 1] * W[i] + b[i])
-*/
+typedef enum { SOFTMAX } LOSSTYPE;
 
-class Network
-{
-private:
-    std::vector<dmatrix> W;
-    std::vector<dvector> b;
-    float eta;
-    int input_len;
-
-    void forward_propagation(const dvector &input, std::vector<dvector> &x, std::vector<dvector> &y) const;
-    dvector forward_propagation(const dvector &input) const;
-
-    void back_propagation(const dvector &input, const int output, const std::vector<dvector> &x, const std::vector<dvector> &y, std::vector<dmatrix> &dW, std::vector<dvector> &db) const;
-
+class Network {
 public:
     Network();
-    Network(float _eta, int _input_len);
+    Network(int _in_n, int _max_layer_n, LOSSTYPE _losstype, float _eta);
+    Network(const char *file);
+    ~Network();
 
-    float get_eta() const;
-    void set_eta(float _eta);
+    void add_layer(int n, ACTIVATION activation);
 
-    void push_back(int n);
-    void train(const Dataset &dataset);
+    void forward_propagation(float *in);
+    void back_propagation(float *in, int out, float eta);
+    void train(Data data, float eta);
 
-    int predict(const dvector &input) const;
-    float loss(const Data &data) const;
-    std::pair<float, float> get_error_and_loss(const Dataset &dataset) const;
+    float *get_out();
+    Layer *get_last_layer();
 
-    void write_file(const char *file_path) const;
-    bool read_file(const char *file_path);
+    int predict(float *in);
+    void predict_p(float *in);
+    void get_error_and_loss(Dataset &dataset, float *error, float *ls);
+
+    void write_file(const char *file, float train_error, float cross_error,
+                    float test_error);
+
+private:
+    void calc_dy(Layer *layer, int out);
+    float calc_loss(Layer *layer, int out);
+
+public:
+    LOSSTYPE losstype;
+    int in_n;
+    int layer_n;
+    int max_layer_n;
+    float eta;
+    Layer **layers;
 };
+
 #endif

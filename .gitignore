@@ -1,3 +1,6 @@
-main
-network-data
 .vscode
+model-data/*
+!model-data/standard
+test-image
+solosis
+solosis-debug

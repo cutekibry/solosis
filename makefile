@@ -1,13 +1,7 @@
-comp:
-	g++ *.cpp -Iinclude -o main -g
+FLAGS=-std=c++17 -Iinclude -lcurses `pkg-config --libs opencv4`
 
-compfast:
-	g++ *.cpp -Iinclude -o main -O3 -ffast-math
+comp: main.cpp source/*.cpp
+	g++ main.cpp source/*.cpp -o solosis -O3 ${FLAGS}
 
-run:
-	g++ *.cpp -Iinclude -o main -g
-	./main
-
-runfast:
-	g++ *.cpp -Iinclude -o main -O3 -ffast-math
-	./main
+comp-debug: main.cpp source/*.cpp
+	g++ main.cpp source/*.cpp -o solosis-debug -g ${FLAGS}

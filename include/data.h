@@ -1,17 +1,35 @@
-#ifndef DATA_H
-#define DATA_H
+#ifndef __DATA_H__
+#define __DATA_H__
 
-#include "maths.h"
-#include <vector>
 #include <cstdio>
 
-struct Data
-{
-    std::vector<unsigned char> input;
-    char output;
-};
-typedef std::vector<Data> Dataset;
+class Data {
+    public:
+    Data();
+    Data(const char *img_path);
+    void save_img(const char *save_path);
 
-Dataset read_dataset(const char *label_file, const char *image_file, int &r, int &c);
+    public:
+
+    float *in;
+    int out;
+
+};
+
+class Dataset {
+public:
+    Dataset(const char *img_path, const char *lab_path);
+    Dataset(Dataset &b, int l, int _n);
+    ~Dataset();
+    Data &operator[](int i);
+
+private:
+    int read_int(FILE *f);
+
+public:
+    Data *datas;
+    int n;
+    int r, c;
+};
 
 #endif
