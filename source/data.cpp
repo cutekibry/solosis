@@ -1,23 +1,42 @@
 #include "data.h"
-#include <cstring>
+#include "utils.h"
 #include <cstdlib>
+#include <cstring>
 #include <opencv2/opencv.hpp>
 
-Data::Data() {}
-Data::Data(const char *img_path) {
-    cv::Mat img = cv::imread(img_path);
-    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-    cv::resize(img, img, cv::Size(28, 28));
-    in = new float[28 * 28];
-    for(int i=0; i<28; i++) for(int j=0; j<28; j++) in[i * 28 + j] = img.at<uchar>(i, j) / 255.0;
+Data::Data() {
+    memset(in, 0, sizeof(in));
     out = -1;
 }
-void Data::save_img(const char *save_path) {
-    cv::Mat img(28, 28, CV_8UC1);
-    for (int i = 0; i < 28; i++)
-        for (int j = 0; j < 28; j++)
-            img.at<uchar>(i, j) = in[i * 28 + j] * 255 + 0.5;
-    cv::imwrite(save_path, img);
+void Data::normalize() {
+    int min_i = 32, min_j = 32, max_i = -1, max_j = -1;
+
+    for (int i = 0; i < 32; i++)
+        for (int j = 0; j < 32; j++)
+            if (in[i][j] > 0) {
+                min_i = std::min(min_i, i);
+                max_i = std::max(max_i, i);
+                min_j = std::min(min_j, j);
+                max_j = std::max(max_j, j);
+            }
+    if (max_i == -1)
+        return;
+    cv::Mat mat(max_i - min_i + 1, max_j - min_j + 1, CV_8UC1);
+    for (int i = min_i; i <= max_i; i++)
+        for (int j = min_j; j <= max_j; j++)
+            mat.at<uchar>(i - min_i, j - min_j) = in[i][j] * 255 + 0.5;
+    cv::resize(mat, mat, cv::Size(32, 32));
+    for (int i = 0; i < 32; i++)
+        for (int j = 0; j < 32; j++)
+            in[i][j] = mat.at<uchar>(i, j) / 255.f;
+}
+void Data::add_noise(float m) {
+    for (int i = 0; i < 32; i++)
+        for (int j = 0; j < 32; j++) {
+            in[i][j] += randf(m);
+            in[i][j] = std::max(in[i][j], 0.f);
+            in[i][j] = std::min(in[i][j], 1.f);
+        }
 }
 
 int Dataset::read_int(FILE *f) {
@@ -35,7 +54,7 @@ Dataset::Dataset(const char *img_path, const char *lab_path) {
         fprintf(stderr, "Error: opening image file %s failed\n", img_path);
         exit(-3);
     }
-    if(lab_f == NULL) {
+    if (lab_f == NULL) {
         fprintf(stderr, "Error: opening label file %s failed\n", lab_path);
         exit(-4);
     }
@@ -50,9 +69,11 @@ Dataset::Dataset(const char *img_path, const char *lab_path) {
 
     datas = new Data[n];
     for (int i = 0; i < n; i++) {
-        datas[i].in = new float[r * c];
-        for (int j = 0; j < r * c; j++)
-            datas[i].in[j] = fgetc(img_f) / 255.0;
+        for (int j = 0; j < r; j++)
+            for (int k = 0; k < c; k++)
+                datas[i].in[j + (32 - r) / 2][k + (32 - c) / 2] =
+                    fgetc(img_f) / 255.0;
+        datas[i].normalize();
         datas[i].out = fgetc(lab_f);
     }
     fclose(img_f);
@@ -63,11 +84,14 @@ Dataset::Dataset(Dataset &b, int l, int _n) {
     datas = new Data[n];
     r = b.r;
     c = b.c;
-    for(int i=0; i<n; i++)
+    for (int i = 0; i < n; i++)
         datas[i] = b.datas[l + i];
 }
-Dataset::~Dataset() {
-    delete[] datas;
-}
+Dataset::~Dataset() { delete[] datas; }
 
 Data &Dataset::operator[](int i) { return datas[i]; }
+
+void Dataset::add_noise(float m) {
+    for (int i = 0; i < n; i++)
+        datas[i].add_noise(m);
+}

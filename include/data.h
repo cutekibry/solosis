@@ -6,12 +6,12 @@
 class Data {
     public:
     Data();
-    Data(const char *img_path);
-    void save_img(const char *save_path);
+    void normalize();
+    void add_noise(float m);
 
     public:
 
-    float *in;
+    float in[32][32];
     int out;
 
 };
@@ -22,6 +22,8 @@ public:
     Dataset(Dataset &b, int l, int _n);
     ~Dataset();
     Data &operator[](int i);
+
+    void add_noise(float m);
 
 private:
     int read_int(FILE *f);

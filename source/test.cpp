@@ -1,5 +1,5 @@
 #include "test.h"
-#include "netset.h"
+#include "lenet.h"
 
 namespace test {
 
@@ -19,16 +19,12 @@ int main(int argc, char *argv[], void (*usage)(const char *prog)) {
                      "mnist-data/t10k-labels-idx1-ubyte");
     train_set.n = 55000;
 
-    Netset netset(argc - 2, K);
-    for (int i = 2; i < argc; i++)
-        if (!netset.add_network(argv[i])) {
-            fprintf(stderr, "Network %s add failed", argv[i]);
-            return -2;
-        }
+    Lenet lenet(argv[2]);
+    lenet.toggle_test_mode(true);
 
-    printf("train %.4f%%\n", netset.error_rate(train_set) * 100);
-    printf("cross %.4f%%\n", netset.error_rate(cross_set) * 100);
-    printf("test %.4f%%\n", netset.error_rate(test_set) * 100);
+    printf("train %.4f%%\n", lenet.error_rate(train_set) * 100);
+    printf("cross %.4f%%\n", lenet.error_rate(cross_set) * 100);
+    printf("test %.4f%%\n", lenet.error_rate(test_set) * 100);
     return 0;
 }
 }; // namespace test
